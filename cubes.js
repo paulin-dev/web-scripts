@@ -14,8 +14,6 @@
       position: "fixed",
       width: `${SIZE}px`,
       height: `${SIZE}px`,
-      left: "0",
-      top: "0",
       background: randomColor(),
       zIndex: "999999",
       pointerEvents: "none",
@@ -36,86 +34,91 @@
   }
 
   function animate() {
-    // Move cubes
+    // Move + wall collisions
     for (const c of cubes) {
       c.x += c.vx;
       c.y += c.vy;
       c.rotation += c.vr;
 
-      let hitEdge = false;
+      let hit = false;
 
-      // Left / right
-      if (c.x < 0) {
+      if (c.x <= 0) {
         c.x = 0;
         c.vx = Math.abs(c.vx);
-        hitEdge = true;
-      } else if (c.x + SIZE > innerWidth) {
+        hit = true;
+      }
+
+      if (c.x >= innerWidth - SIZE) {
         c.x = innerWidth - SIZE;
         c.vx = -Math.abs(c.vx);
-        hitEdge = true;
+        hit = true;
       }
 
-      // Top / bottom
-      if (c.y < 0) {
+      if (c.y <= 0) {
         c.y = 0;
         c.vy = Math.abs(c.vy);
-        hitEdge = true;
-      } else if (c.y + SIZE > innerHeight) {
+        hit = true;
+      }
+
+      if (c.y >= innerHeight - SIZE) {
         c.y = innerHeight - SIZE;
         c.vy = -Math.abs(c.vy);
-        hitEdge = true;
+        hit = true;
       }
 
-      if (hitEdge) {
-        c.el.style.background = randomColor();
-      }
+      if (hit) c.el.style.background = randomColor();
     }
 
-    // Cube ↔ cube collisions
-    for (let i = 0; i < cubes.length; i++) {
-      for (let j = i + 1; j < cubes.length; j++) {
+    // Cube collisions
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
         const a = cubes[i];
         const b = cubes[j];
 
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
+        const ax2 = a.x + SIZE;
+        const ay2 = a.y + SIZE;
+        const bx2 = b.x + SIZE;
+        const by2 = b.y + SIZE;
 
-        const overlapX = SIZE - Math.abs(dx);
-        const overlapY = SIZE - Math.abs(dy);
+        // No overlap
+        if (
+          ax2 <= b.x ||
+          a.x >= bx2 ||
+          ay2 <= b.y ||
+          a.y >= by2
+        ) {
+          continue;
+        }
 
-        if (overlapX > 0 && overlapY > 0) {
-          // Collision is horizontal
-          if (overlapX < overlapY) {
-            const direction = dx >= 0 ? 1 : -1;
+        // Calculate penetration
+        const overlapX = Math.min(ax2, bx2) - Math.max(a.x, b.x);
+        const overlapY = Math.min(ay2, by2) - Math.max(a.y, b.y);
 
-            // Separate them
-            a.x -= overlapX * direction / 2;
-            b.x += overlapX * direction / 2;
+        // Horizontal collision
+        if (overlapX < overlapY) {
+          const direction = a.x < b.x ? 1 : -1;
 
-            // Only bounce if moving toward each other
-            if ((a.vx - b.vx) * direction > 0) {
-              [a.vx, b.vx] = [b.vx, a.vx];
-            }
-          }
+          a.x -= direction * overlapX / 2;
+          b.x += direction * overlapX / 2;
 
-          // Collision is vertical
-          else {
-            const direction = dy >= 0 ? 1 : -1;
+          a.vx = -Math.abs(a.vx) * direction;
+          b.vx = Math.abs(b.vx) * direction;
+        }
 
-            // Separate them
-            a.y -= overlapY * direction / 2;
-            b.y += overlapY * direction / 2;
+        // Vertical collision
+        else {
+          const direction = a.y < b.y ? 1 : -1;
 
-            // Only bounce if moving toward each other
-            if ((a.vy - b.vy) * direction > 0) {
-              [a.vy, b.vy] = [b.vy, a.vy];
-            }
-          }
+          a.y -= direction * overlapY / 2;
+          b.y += direction * overlapY / 2;
+
+          a.vy = -Math.abs(a.vy) * direction;
+          b.vy = Math.abs(b.vy) * direction;
         }
       }
     }
 
-    // Render
+    // Draw
     for (const c of cubes) {
       c.el.style.left = `${c.x}px`;
       c.el.style.top = `${c.y}px`;
