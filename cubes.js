@@ -2,10 +2,10 @@
   const cubes = [];
   const N = 30;
   const SIZE = 30;
+  const SPEED = 3;
 
-  function randomColor() {
-    return `hsl(${Math.random() * 360}, 80%, 60%)`;
-  }
+  const randomColor = () =>
+    `hsl(${Math.random() * 360}, 80%, 60%)`;
 
   for (let i = 0; i < N; i++) {
     const cube = document.createElement("div");
@@ -14,8 +14,8 @@
       position: "fixed",
       width: `${SIZE}px`,
       height: `${SIZE}px`,
-      left: `${Math.random() * (innerWidth - SIZE)}px`,
-      top: `${Math.random() * (innerHeight - SIZE)}px`,
+      left: "0",
+      top: "0",
       background: randomColor(),
       zIndex: "999999",
       pointerEvents: "none",
@@ -26,17 +26,17 @@
 
     cubes.push({
       el: cube,
-      x: parseFloat(cube.style.left),
-      y: parseFloat(cube.style.top),
-      vx: (Math.random() - 0.5) * 5,
-      vy: (Math.random() - 0.5) * 5,
+      x: Math.random() * (innerWidth - SIZE),
+      y: Math.random() * (innerHeight - SIZE),
+      vx: (Math.random() * 2 - 1) * SPEED,
+      vy: (Math.random() * 2 - 1) * SPEED,
       rotation: Math.random() * 360,
-      vr: (Math.random() - 0.5) * 5,
+      vr: (Math.random() * 2 - 1) * 5,
     });
   }
 
   function animate() {
-    // Movement + walls
+    // Move cubes
     for (const c of cubes) {
       c.x += c.vx;
       c.y += c.vy;
@@ -44,23 +44,25 @@
 
       let hitEdge = false;
 
-      if (c.x <= 0) {
+      // Left / right
+      if (c.x < 0) {
         c.x = 0;
-        c.vx *= -1;
+        c.vx = Math.abs(c.vx);
         hitEdge = true;
-      } else if (c.x >= innerWidth - SIZE) {
+      } else if (c.x + SIZE > innerWidth) {
         c.x = innerWidth - SIZE;
-        c.vx *= -1;
+        c.vx = -Math.abs(c.vx);
         hitEdge = true;
       }
 
-      if (c.y <= 0) {
+      // Top / bottom
+      if (c.y < 0) {
         c.y = 0;
-        c.vy *= -1;
+        c.vy = Math.abs(c.vy);
         hitEdge = true;
-      } else if (c.y >= innerHeight - SIZE) {
+      } else if (c.y + SIZE > innerHeight) {
         c.y = innerHeight - SIZE;
-        c.vy *= -1;
+        c.vy = -Math.abs(c.vy);
         hitEdge = true;
       }
 
@@ -69,7 +71,7 @@
       }
     }
 
-    // Cube collisions
+    // Cube ↔ cube collisions
     for (let i = 0; i < cubes.length; i++) {
       for (let j = i + 1; j < cubes.length; j++) {
         const a = cubes[i];
@@ -78,34 +80,36 @@
         const dx = b.x - a.x;
         const dy = b.y - a.y;
 
-        if (Math.abs(dx) < SIZE && Math.abs(dy) < SIZE) {
-          // Resolve overlap
-          if (Math.abs(dx) > Math.abs(dy)) {
-            const overlap = SIZE - Math.abs(dx);
+        const overlapX = SIZE - Math.abs(dx);
+        const overlapY = SIZE - Math.abs(dy);
 
-            if (dx > 0) {
-              a.x -= overlap / 2;
-              b.x += overlap / 2;
-            } else {
-              a.x += overlap / 2;
-              b.x -= overlap / 2;
+        if (overlapX > 0 && overlapY > 0) {
+          // Collision is horizontal
+          if (overlapX < overlapY) {
+            const direction = dx >= 0 ? 1 : -1;
+
+            // Separate them
+            a.x -= overlapX * direction / 2;
+            b.x += overlapX * direction / 2;
+
+            // Only bounce if moving toward each other
+            if ((a.vx - b.vx) * direction > 0) {
+              [a.vx, b.vx] = [b.vx, a.vx];
             }
+          }
 
-            // Exchange horizontal direction
-            [a.vx, b.vx] = [b.vx, a.vx];
-          } else {
-            const overlap = SIZE - Math.abs(dy);
+          // Collision is vertical
+          else {
+            const direction = dy >= 0 ? 1 : -1;
 
-            if (dy > 0) {
-              a.y -= overlap / 2;
-              b.y += overlap / 2;
-            } else {
-              a.y += overlap / 2;
-              b.y -= overlap / 2;
+            // Separate them
+            a.y -= overlapY * direction / 2;
+            b.y += overlapY * direction / 2;
+
+            // Only bounce if moving toward each other
+            if ((a.vy - b.vy) * direction > 0) {
+              [a.vy, b.vy] = [b.vy, a.vy];
             }
-
-            // Exchange vertical direction
-            [a.vy, b.vy] = [b.vy, a.vy];
           }
         }
       }
