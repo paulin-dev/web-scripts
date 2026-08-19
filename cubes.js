@@ -36,6 +36,7 @@
   }
 
   function animate() {
+    // Movement + walls
     for (const c of cubes) {
       c.x += c.vx;
       c.y += c.vy;
@@ -66,7 +67,52 @@
       if (hitEdge) {
         c.el.style.background = randomColor();
       }
+    }
 
+    // Cube collisions
+    for (let i = 0; i < cubes.length; i++) {
+      for (let j = i + 1; j < cubes.length; j++) {
+        const a = cubes[i];
+        const b = cubes[j];
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+
+        if (Math.abs(dx) < SIZE && Math.abs(dy) < SIZE) {
+          // Resolve overlap
+          if (Math.abs(dx) > Math.abs(dy)) {
+            const overlap = SIZE - Math.abs(dx);
+
+            if (dx > 0) {
+              a.x -= overlap / 2;
+              b.x += overlap / 2;
+            } else {
+              a.x += overlap / 2;
+              b.x -= overlap / 2;
+            }
+
+            // Exchange horizontal direction
+            [a.vx, b.vx] = [b.vx, a.vx];
+          } else {
+            const overlap = SIZE - Math.abs(dy);
+
+            if (dy > 0) {
+              a.y -= overlap / 2;
+              b.y += overlap / 2;
+            } else {
+              a.y += overlap / 2;
+              b.y -= overlap / 2;
+            }
+
+            // Exchange vertical direction
+            [a.vy, b.vy] = [b.vy, a.vy];
+          }
+        }
+      }
+    }
+
+    // Render
+    for (const c of cubes) {
       c.el.style.left = `${c.x}px`;
       c.el.style.top = `${c.y}px`;
       c.el.style.transform = `rotate(${c.rotation}deg)`;
